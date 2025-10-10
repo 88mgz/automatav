@@ -56,7 +56,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Fall back to deterministic article
-    article = buildFallbackArticle(prompt)
+const fallback = buildFallbackArticle(prompt) as any
+if (fallback?.hero && typeof fallback.hero.image === 'string') {
+  fallback.hero.image = { url: fallback.hero.image, alt: fallback.hero?.headline ?? 'Hero image' }
+}
+article = fallback
     return NextResponse.json({
       success: true,
       article,
