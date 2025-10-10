@@ -10,7 +10,11 @@ export async function POST(request: NextRequest) {
     const existingArticles = await listArticles()
 
     // Run QC checks
-    const results = await runQCChecks(article, existingArticles)
+    const normalizedExisting = existingArticles.map((a: any) => ({
+      intent: a?.intent ?? "comparison",
+      ...a,
+    }))
+    const results = await runQCChecks(article as any, normalizedExisting as any)
 
     return NextResponse.json({ results })
   } catch (error) {

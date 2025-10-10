@@ -1,86 +1,101 @@
 "use client"
 
-import type { ChartSection } from "@/lib/content-schema"
+import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
   ResponsiveContainer,
+  BarChart, LineChart, PieChart,
+  Bar, Line, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from "recharts"
 
-interface ChartsProps {
-  section: ChartSection
-  brandColor: string
+type ChartKind = "bar" | "line" | "pie"
+
+interface ChartSection {
+  title?: string
+  kind: ChartKind
+  data: any[]
+  xKey?: string
+  yKey?: string
+  dataKey?: string
+  nameKey?: string
 }
 
-const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"]
+export interface ChartsProps {
+  section: ChartSection
+  /** Optional brand color to tint series */
+  brandColor?: string
+}
 
 export function Charts({ section, brandColor }: ChartsProps) {
-  const data = section.data.map((item) => ({
-    name: item.label,
-    value: item.value,
-  }))
+  const title = section.title ?? "Chart"
+
+  // Always return a chart element (never null)
+  const renderChart = (): React.ReactElement => {
+    if (section.kind === "bar") {
+      const xKey = section.xKey ?? "name"
+      const yKey = section.yKey ?? "value"
+      return (
+        <BarChart data={section.data ?? []}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey={xKey} />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey={yKey} fill={brandColor} />
+        </BarChart>
+      )
+    }
+
+    if (section.kind === "line") {
+      const xKey = section.xKey ?? "name"
+      const yKey = section.yKey ?? "value"
+      return (
+        <LineChart data={section.data ?? []}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey={xKey} />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey={yKey} dot={false} stroke={brandColor} />
+        </LineChart>
+      )
+    }
+
+    if (section.kind === "pie") {
+      const dataKey = section.dataKey ?? "value"
+      const nameKey = section.nameKey ?? "name"
+      const data = section.data ?? []
+      return (
+        <PieChart>
+          <Tooltip />
+          <Legend />
+          <Pie data={data} dataKey={dataKey} nameKey={nameKey} outerRadius={100}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={brandColor} />
+            ))}
+          </Pie>
+        </PieChart>
+      )
+    }
+
+    // Fallback (shouldn’t happen with our union, but keeps TS happy)
+    return (
+      <BarChart data={[]}>
+        <XAxis />
+        <YAxis />
+      </BarChart>
+    )
+  }
 
   return (
     <Card>
-      {section.title && (
-        <CardHeader>
-          <CardTitle>{section.title}</CardTitle>
-        </CardHeader>
-      )}
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          {section.kind === "bar" && (
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="name" className="text-xs" />
-              <YAxis className="text-xs" />
-              <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-              <Legend />
-              <Bar dataKey="value" fill={brandColor} />
-            </BarChart>
-          )}
-
-          {section.kind === "line" && (
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="name" className="text-xs" />
-              <YAxis className="text-xs" />
-              <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-              <Legend />
-              <Line type="monotone" dataKey="value" stroke={brandColor} strokeWidth={2} />
-            </LineChart>
-          )}
-
-          {section.kind === "pie" && (
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label
-                outerRadius={100}
-                fill={brandColor}
-                dataKey="value"
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-            </PieChart>
-          )}
+          {renderChart()}
         </ResponsiveContainer>
       </CardContent>
     </Card>

@@ -112,7 +112,7 @@ export function ArticleView({ article }: ArticleViewProps) {
           <main className="flex-1 min-w-0">
             <article className="space-y-12">
               {article.blocks.map((block, index) => {
-                const elements = []
+                const elements: JSX.Element[] = []
 
                 const sectionId = article.toc[index]?.id || `section-${index}`
 
@@ -258,8 +258,12 @@ export function ArticleView({ article }: ArticleViewProps) {
         </motion.button>
       )}
 
-      {article.seo?.schema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(article.seo.schema) }} />
+      {Boolean(((article as any)?.seo?.schema)) && (
+        <script
+          type="application/ld+json"
+          // TS: schema may be unknown; stringify is runtime-safe
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(((article as any).seo.schema)) }}
+        />
       )}
     </div>
   )
@@ -295,7 +299,7 @@ function BlockRenderer({ block, sectionId, onCopyAnchor, copiedAnchor }: BlockRe
               <LinkIcon className="w-4 h-4 text-muted-foreground" />
             )}
           </button>
-          <div dangerouslySetInnerHTML={{ __html: block.html }} />
+          <div dangerouslySetInnerHTML={{ __html: (block as any).html }} />
         </div>
       )}
 
