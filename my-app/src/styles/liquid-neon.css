@@ -1,0 +1,131 @@
+:root {
+  /* Complementary color pairs */
+  --pair-1-a: #2563eb; /* cobalt */
+  --pair-1-b: #a3e635; /* lime */
+  --pair-2-a: #7c3aed; /* violet */
+  --pair-2-b: #22d3ee; /* aqua */
+
+  /* Hairline borders */
+  --hairline-light: 0 0% 92%;
+  --hairline-dark: 220 14% 16%;
+
+  /* Motion timing */
+  --dur-1: 160ms;
+  --dur-2: 260ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Small radii only */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+}
+
+/* Hairline borders */
+.border-hairline {
+  border: 1px solid hsl(var(--hairline-light));
+}
+
+.dark .border-hairline {
+  border-color: hsl(var(--hairline-dark));
+}
+
+/* 1px gradient rule */
+.rule-grad {
+  height: 2px;
+  background: linear-gradient(90deg, var(--pair-1-a), var(--pair-1-b));
+}
+
+/* Dual-stroke accent (no chunky shadows) */
+.dual-stroke {
+  position: relative;
+}
+
+.dual-stroke::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--pair-2-a), var(--pair-2-b));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Animated gradient background */
+@keyframes gradientShift {
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.grad-anim {
+  background: linear-gradient(90deg, var(--pair-1-a), var(--pair-2-a), var(--pair-1-b));
+  background-size: 200% 100%;
+  animation: gradientShift 16s linear infinite;
+}
+
+/* Interference lines (TL;DR band) */
+.interference {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 6px 6px, 6px 6px;
+  mix-blend-mode: overlay;
+  opacity: 0.6;
+}
+
+/* Hover micro-lift */
+.u-hover {
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+.u-hover:hover {
+  transform: translateY(-1px) scale(1.01);
+}
+
+/* Breathing animation for pull quote bar */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(1.03);
+  }
+}
+
+.breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, var(--pair-1-a), var(--pair-1-b));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Minimal card */
+.minimal-card {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--hairline-light));
+  border-radius: var(--r-md);
+}
+
+.dark .minimal-card {
+  background: hsl(var(--card));
+  border-color: hsl(var(--hairline-dark));
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .grad-anim,
+  .breathe,
+  .u-hover {
+    animation: none !important;
+    transition: none !important;
+  }
+}
