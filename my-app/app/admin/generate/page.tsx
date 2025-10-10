@@ -1,0 +1,556 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  Sparkles,
+  Eye,
+  Upload,
+  Loader2,
+  Download,
+  Copy,
+  Check,
+  AlertCircle,
+  Wand2,
+  FileJson,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { ArticleView } from "@/components/ArticleView"
+import { parseArticle, type Article } from "@/lib/articleSchema"
+import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { LiquidBlobs } from "@/components/visual/LiquidBlobs"
+
+const SAMPLE_DATA = {
+  title: "2026 Midsize Sedan Comparison: Honda Accord vs Toyota Camry vs Mazda6",
+  tldr: "The 2026 Honda Accord, Toyota Camry, and Mazda6 represent the best midsize sedans on the market. The Accord excels in fuel economy and cargo space, the Camry offers legendary reliability and available AWD, while the Mazda6 provides upscale styling at the lowest price.",
+  keyTakeaways: [
+    "Honda Accord leads in cargo space with 16.7 cubic feet",
+    "Toyota Camry achieves best highway fuel economy at 39 MPG",
+    "Mazda6 offers lowest starting price at $26,950",
+    "All three sedans feature standard advanced safety systems",
+  ],
+  quizInstructions:
+    "Create a 4-question quiz to help users determine which sedan best fits their needs. Focus on priorities like fuel economy, cargo space, AWD, and budget.",
+  calculatorInstructions:
+    "MPG calculator with defaults: City MPG: 30, Highway MPG: 38, Fuel Price: $3.50, Annual Miles: 12,000",
+  pullQuote:
+    "The Honda Accord continues to set the benchmark for midsize sedans with its perfect blend of efficiency, space, and driving dynamics.",
+  pullQuoteAttribution: "Car and Driver, 2026 Review",
+  dropdownTitle: "Understanding CVT Transmissions",
+  dropdownBody:
+    "Continuously Variable Transmissions (CVTs) are used in both the Honda Accord and Toyota Camry. Unlike traditional automatic transmissions with fixed gears, CVTs use a belt and pulley system to provide seamless acceleration and optimal fuel efficiency.",
+  reviewsInstructions:
+    "Generate 3 expert reviews from Car and Driver, Motor Trend, and Edmunds. Include ratings, pros, cons, and summaries for each vehicle.",
+}
+
+function CollapsibleSection({
+  title,
+  children,
+  defaultOpen = false,
+}: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+      >
+        <span className="font-medium text-sm">{title}</span>
+        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 space-y-4">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+export default function GeneratePage() {
+  const [formData, setFormData] = useState({
+    title: "",
+    tldr: "",
+    keyTakeaways: "",
+    quizInstructions: "",
+    calculatorInstructions: "",
+    pullQuote: "",
+    pullQuoteAttribution: "",
+    dropdownTitle: "",
+    dropdownBody: "",
+    reviewsInstructions: "",
+    modelsJson: "",
+  })
+
+  const [loading, setLoading] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [error, setError] = useState("")
+  const [generatedArticle, setGeneratedArticle] = useState<Article | null>(null)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [publishedUrl, setPublishedUrl] = useState("")
+  const [copied, setCopied] = useState(false)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "g") {
+        e.preventDefault()
+        handleGenerate()
+      }
+      if (e.ctrlKey && e.key === "p") {
+        e.preventDefault()
+        if (generatedArticle) handlePublish()
+      }
+      if (e.ctrlKey && e.key === "l") {
+        e.preventDefault()
+        loadSampleData()
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyPress)
+    return () => window.removeEventListener("keydown", handleKeyPress)
+  }, [formData, generatedArticle])
+
+  const loadSampleData = () => {
+    setFormData({
+      title: SAMPLE_DATA.title,
+      tldr: SAMPLE_DATA.tldr,
+      keyTakeaways: SAMPLE_DATA.keyTakeaways.join("\n"),
+      quizInstructions: SAMPLE_DATA.quizInstructions,
+      calculatorInstructions: SAMPLE_DATA.calculatorInstructions,
+      pullQuote: SAMPLE_DATA.pullQuote,
+      pullQuoteAttribution: SAMPLE_DATA.pullQuoteAttribution,
+      dropdownTitle: SAMPLE_DATA.dropdownTitle,
+      dropdownBody: SAMPLE_DATA.dropdownBody,
+      reviewsInstructions: SAMPLE_DATA.reviewsInstructions,
+      modelsJson: JSON.stringify(
+        [
+          { name: "2026 Honda Accord", hp: 192, mpg: 38, price: 27950 },
+          { name: "2026 Toyota Camry", hp: 203, mpg: 39, price: 27950 },
+          { name: "2026 Mazda6", hp: 187, mpg: 35, price: 26950 },
+        ],
+        null,
+        2,
+      ),
+    })
+    toast({
+      title: "Sample data loaded",
+      description: "All fields have been populated with example content",
+    })
+  }
+
+  const handleGenerate = async () => {
+    if (!formData.title) {
+      toast({
+        title: "Title required",
+        description: "Please enter a title for your article",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setLoading(true)
+    setError("")
+    setPublishedUrl("")
+    setGeneratedArticle(null)
+    setValidationErrors([])
+
+    try {
+      let models = []
+      if (formData.modelsJson.trim()) {
+        try {
+          models = JSON.parse(formData.modelsJson)
+        } catch (err) {
+          throw new Error("Invalid JSON in models field. Please check your syntax.")
+        }
+      }
+
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: formData.title,
+          models: models.length > 0 ? models : undefined,
+          customInstructions: {
+            tldr: formData.tldr,
+            keyTakeaways: formData.keyTakeaways.split("\n").filter(Boolean),
+            quizInstructions: formData.quizInstructions,
+            calculatorInstructions: formData.calculatorInstructions,
+            pullQuote: formData.pullQuote,
+            pullQuoteAttribution: formData.pullQuoteAttribution,
+            dropdownTitle: formData.dropdownTitle,
+            dropdownBody: formData.dropdownBody,
+            reviewsInstructions: formData.reviewsInstructions,
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.article) {
+        throw new Error(data.error || "Failed to generate article")
+      }
+
+      const validatedArticle = parseArticle(data.article)
+      setGeneratedArticle(validatedArticle)
+      toast({
+        title: "Article generated",
+        description: "Your article has been generated successfully",
+      })
+    } catch (err: any) {
+      setError(err.message)
+      toast({
+        title: "Generation failed",
+        description: err.message,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePublish = async () => {
+    if (!generatedArticle) return
+
+    setPublishing(true)
+    setError("")
+
+    try {
+      const response = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ article: generatedArticle }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || `HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      setPublishedUrl(data.url)
+      toast({
+        title: "Published successfully",
+        description: "Your article is now live",
+      })
+    } catch (err: any) {
+      setError(err.message)
+      toast({
+        title: "Publish failed",
+        description: err.message,
+        variant: "destructive",
+      })
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const copyJSON = () => {
+    if (!generatedArticle) return
+    navigator.clipboard.writeText(JSON.stringify(generatedArticle, null, 2))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+    toast({
+      title: "Copied to clipboard",
+      description: "Article JSON has been copied",
+    })
+  }
+
+  const downloadJSON = () => {
+    if (!generatedArticle) return
+    const blob = new Blob([JSON.stringify(generatedArticle, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${generatedArticle.slug}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast({
+      title: "Downloaded",
+      description: "Article JSON has been downloaded",
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
+      <LiquidBlobs />
+
+      <div className="relative z-10 py-12">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+              Generate Content
+            </h1>
+            <p className="text-slate-400 mb-3">
+              Create rich vehicle intelligence pages with custom instructions for AI modules
+            </p>
+            <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+              <kbd className="px-2 py-1 bg-slate-800 border border-slate-700 rounded">Ctrl+G</kbd>
+              <span>Generate</span>
+              <kbd className="px-2 py-1 bg-slate-800 border border-slate-700 rounded">Ctrl+P</kbd>
+              <span>Publish</span>
+              <kbd className="px-2 py-1 bg-slate-800 border border-slate-700 rounded">Ctrl+L</kbd>
+              <span>Load Sample</span>
+            </div>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="lg:col-span-1 space-y-4 h-fit sticky top-8"
+            >
+              {/* Basic Info */}
+              <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-800">
+                <h3 className="text-lg font-semibold mb-4 text-slate-200">Article Info</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title" className="text-slate-300">
+                      Title *
+                    </Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="2026 Toyota Camry vs Honda Accord"
+                      className="mt-2 bg-slate-800 border-slate-700"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="modelsJson" className="text-slate-300">
+                      Models Data (JSON)
+                    </Label>
+                    <Textarea
+                      id="modelsJson"
+                      value={formData.modelsJson}
+                      onChange={(e) => setFormData({ ...formData, modelsJson: e.target.value })}
+                      placeholder='[{"name": "Camry", "hp": 225, "mpg": 44}]'
+                      rows={6}
+                      className="mt-2 font-mono text-xs bg-slate-800 border-slate-700"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={loadSampleData}
+                    variant="outline"
+                    className="w-full border-slate-700 hover:bg-slate-800 bg-transparent"
+                  >
+                    <FileJson className="w-4 h-4 mr-2" />
+                    Load Sample Data (Ctrl+L)
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-800 space-y-3">
+                <h3 className="text-lg font-semibold mb-4 text-slate-200">AI Module Instructions</h3>
+
+                <CollapsibleSection title="TL;DR" defaultOpen>
+                  <Textarea
+                    value={formData.tldr}
+                    onChange={(e) => setFormData({ ...formData, tldr: e.target.value })}
+                    placeholder="Brief summary of the article..."
+                    rows={3}
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Key Takeaways">
+                  <Textarea
+                    value={formData.keyTakeaways}
+                    onChange={(e) => setFormData({ ...formData, keyTakeaways: e.target.value })}
+                    placeholder="One takeaway per line..."
+                    rows={4}
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                  <p className="text-xs text-slate-500">Enter one takeaway per line</p>
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Quiz">
+                  <Textarea
+                    value={formData.quizInstructions}
+                    onChange={(e) => setFormData({ ...formData, quizInstructions: e.target.value })}
+                    placeholder="Instructions for quiz generation..."
+                    rows={3}
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Calculator">
+                  <Textarea
+                    value={formData.calculatorInstructions}
+                    onChange={(e) => setFormData({ ...formData, calculatorInstructions: e.target.value })}
+                    placeholder="Calculator defaults and instructions..."
+                    rows={3}
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Pull Quote">
+                  <Textarea
+                    value={formData.pullQuote}
+                    onChange={(e) => setFormData({ ...formData, pullQuote: e.target.value })}
+                    placeholder="Quote text..."
+                    rows={2}
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                  <Input
+                    value={formData.pullQuoteAttribution}
+                    onChange={(e) => setFormData({ ...formData, pullQuoteAttribution: e.target.value })}
+                    placeholder="Attribution (e.g., Car and Driver)"
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Dropdown/FAQ">
+                  <Input
+                    value={formData.dropdownTitle}
+                    onChange={(e) => setFormData({ ...formData, dropdownTitle: e.target.value })}
+                    placeholder="Dropdown title..."
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                  <Textarea
+                    value={formData.dropdownBody}
+                    onChange={(e) => setFormData({ ...formData, dropdownBody: e.target.value })}
+                    placeholder="Dropdown content..."
+                    rows={3}
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Reviews">
+                  <Textarea
+                    value={formData.reviewsInstructions}
+                    onChange={(e) => setFormData({ ...formData, reviewsInstructions: e.target.value })}
+                    placeholder="Instructions for review generation..."
+                    rows={3}
+                    className="bg-slate-800 border-slate-700 text-sm"
+                  />
+                </CollapsibleSection>
+              </div>
+
+              <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-800 space-y-3">
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loading || !formData.title}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Article
+                    </>
+                  )}
+                </Button>
+
+                {generatedArticle && (
+                  <>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={copyJSON}
+                        variant="outline"
+                        className="flex-1 border-slate-700 bg-transparent"
+                        size="sm"
+                      >
+                        {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                        Copy
+                      </Button>
+                      <Button
+                        onClick={downloadJSON}
+                        variant="outline"
+                        className="flex-1 border-slate-700 bg-transparent"
+                        size="sm"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+
+                    <Button
+                      onClick={handlePublish}
+                      disabled={publishing || validationErrors.length > 0}
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                    >
+                      {publishing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Publishing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Publish Article
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {publishedUrl && (
+                  <Alert className="bg-green-500/10 border-green-500/50">
+                    <AlertDescription className="text-green-400">
+                      Published!{" "}
+                      <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                        View article →
+                      </a>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Preview */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2">
+              {generatedArticle ? (
+                <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-800">
+                  <div className="flex items-center gap-2 mb-6 px-4">
+                    <Eye className="w-5 h-5 text-purple-400" />
+                    <h2 className="text-2xl font-bold text-purple-400">Preview</h2>
+                    <span className="text-sm text-slate-500 ml-auto">{generatedArticle.slug}</span>
+                  </div>
+                  <div className="bg-slate-950 rounded-xl overflow-hidden">
+                    <ArticleView article={generatedArticle} />
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl p-12 border border-slate-800 text-center">
+                  <Wand2 className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+                  <p className="text-slate-500">Generate content to see preview</p>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

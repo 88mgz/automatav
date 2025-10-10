@@ -1,0 +1,57 @@
+[
+  {
+    "name": "2026 Toyota Camry LE AWD",
+    "hp": 225,
+    "mpg": 44,
+    "price": 27950,
+    "drivetrain": "AWD",
+    "transmission": "CVT",
+    "fuelType": "Hybrid",
+    "seating": 5,
+    "cargo": "15.1 cu ft"
+  },
+  {
+    "name": "2026 Honda Accord EX",
+    "hp": 192,
+    "mpg": 38,
+    "price": 28990,
+    "drivetrain": "FWD",
+    "transmission": "CVT",
+    "fuelType": "Hybrid",
+    "seating": 5,
+    "cargo": "16.7 cu ft"
+  },
+  {
+    "name": "2026 Mazda6 Touring",
+    "hp": 187,
+    "mpg": 32,
+    "price": 26500,
+    "drivetrain": "FWD",
+    "transmission": "6-Speed Auto",
+    "fuelType": "Gasoline",
+    "seating": 5,
+    "cargo": "14.7 cu ft"
+  },
+  {
+    "name": "2026 Nissan Altima SR",
+    "hp": 248,
+    "mpg": 29,
+    "price": 29200,
+    "drivetrain": "AWD",
+    "transmission": "CVT",
+    "fuelType": "Gasoline",
+    "seating": 5,
+    "cargo": "15.4 cu ft"
+  },
+  {
+    "name": "2026 Hyundai Sonata SEL Plus",
+    "hp": 191,
+    "mpg": 36,
+    "price": 27800,
+    "drivetrain": "FWD",
+    "transmission": "8-Speed Auto",
+    "fuelType": "Hybrid",
+    "seating": 5,
+    "cargo": "16.0 cu ft"
+  }
+]

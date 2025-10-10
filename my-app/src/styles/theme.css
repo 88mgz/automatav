@@ -1,0 +1,70 @@
+:root {
+  /* Brand hues */
+  --brand: 262;
+  /* violet */
+  --accent: 202;
+  /* azure */
+  --mint: 158;
+  --sun: 42;
+
+  /* Gradients */
+  --g-hero: linear-gradient(135deg, hsl(var(--brand) 95% 62% / 0.9), hsl(var(--accent) 92% 60% / 0.9));
+  --g-blob: radial-gradient(60% 60% at 30% 20%, hsl(var(--mint) 90% 60% / 0.6), transparent 60%),
+    radial-gradient(50% 50% at 70% 80%, hsl(var(--sun) 95% 60% / 0.5), transparent 55%);
+
+  /* Elevation */
+  --shadow-1: 0 8px 24px rgb(2 6 23 / 0.12);
+  --shadow-2: 0 16px 48px rgb(2 6 23 / 0.18);
+
+  /* Motion tokens */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.32, 0, 0.67, 0);
+  --dur-1: 160ms;
+  --dur-2: 280ms;
+  --dur-3: 520ms;
+}
+
+.dark {
+  --g-hero: linear-gradient(135deg, hsl(var(--brand) 45% 35% / 0.9), hsl(var(--accent) 42% 30% / 0.9));
+  --g-blob: radial-gradient(60% 60% at 30% 20%, hsl(var(--mint) 40% 30% / 0.4), transparent 60%),
+    radial-gradient(50% 50% at 70% 80%, hsl(var(--sun) 45% 30% / 0.3), transparent 55%);
+}
+
+/* Utility classes */
+.gradient-hero {
+  background: var(--g-hero);
+}
+
+.gradient-blob {
+  background: var(--g-blob);
+}
+
+.glass-card {
+  backdrop-filter: blur(16px);
+  background: hsl(var(--card) / 0.05);
+  border: 1px solid hsl(var(--border) / 0.1);
+  box-shadow: var(--shadow-1);
+}
+
+.dark .glass-card {
+  background: hsl(var(--card) / 0.025);
+  border: 1px solid hsl(var(--border) / 0.15);
+}
+
+.hover-lift {
+  transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-lift {
+    transition: none;
+  }
+  .hover-lift:hover {
+    transform: none;
+  }
+}
