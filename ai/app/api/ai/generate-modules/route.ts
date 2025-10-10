@@ -194,15 +194,16 @@ Output rules:
       method = "fallback"
     }
 
-    // Save modules to article if slug provided
-    if (slug && article) {
-      const updatedArticle = {
-        ...article,
-        modules,
-        updatedAt: new Date().toISOString(),
-      }
-      await saveArticle(slug, updatedArticle)
-    }
+// Save modules to article if slug provided
+if (slug && article) {
+  const updatedArticle = {
+    ...article,
+    modules,
+    updatedAt: new Date().toISOString(),
+  }
+  // saveArticle expects a single payload; include slug on the object
+  await saveArticle({ ...updatedArticle, slug })
+}
 
     return NextResponse.json({
       ok: true,
