@@ -296,16 +296,23 @@ function calculateSimilarity(text1: string, text2: string): number {
 function checkAltText(article: Article): QCResult {
   const issues: string[] = []
 
-  // Check hero image
-  if (article.hero?.image && !article.hero.image.alt) {
-    issues.push("Hero image missing alt text")
+// Check hero image (support both string URL and { url, alt })
+  const hero: any = (article as any)?.hero
+  if (hero?.image) {
+    const img = hero.image
+    const hasAlt = typeof img === "object" ? Boolean((img as any).alt) : true
+    if (!hasAlt) {
+      issues.push("Hero image missing alt text")
+    }
   }
 
   // Check blocks for images
   article.blocks.forEach((block, index) => {
     if (block.type === "comparisonTable" || block.type === "specGrid") {
-      block.items?.forEach((item, itemIndex) => {
-        if (item.image && !item.image.alt) {
+      (block as any).items?.forEach((item: any, itemIndex: number) => {
+        const img = (item as any)?.image
+        const hasAlt = typeof img === "object" ? Boolean((img as any)?.alt) : true
+        if (img && !hasAlt) {
           issues.push(`Block ${index + 1}, item ${itemIndex + 1}: Missing alt text`)
         }
       })
@@ -346,7 +353,15 @@ function checkMetaTitle(article: Article): QCResult {
 }
 
 function checkMetaDescription(article: Article): QCResult {
-  const desc = article.hero?.subtitle || ""
+  // Prefer explicit SEO/description fields, then safely fall back to hero.* via any
+  const hero: any = (article as any)?.hero
+  const desc: string =
+    (article as any)?.seo?.description ??
+    article.description ??
+    hero?.subheadline ??
+    hero?.subtitle ??
+    ""
+
   const length = desc.length
   const passed = length >= 150 && length <= 160
 
@@ -375,7 +390,7 @@ function checkRequiredFields(article: Article): QCResult {
 
   if (!article.title) missing.push("title")
   if (!article.slug) missing.push("slug")
-  if (!article.hero) missing.push("hero")
+  if (!((article as any).hero)) missing.push("hero")
   if (!article.blocks || article.blocks.length === 0) missing.push("blocks")
 
   return {
