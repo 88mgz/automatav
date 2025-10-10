@@ -1,4 +1,5 @@
 "use client"
+import type { ReactNode } from "react"
 
 import { useEffect, useState, useMemo } from "react"
 import { motion, useScroll, useSpring } from "framer-motion"
@@ -112,7 +113,7 @@ export function ArticleView({ article }: ArticleViewProps) {
           <main className="flex-1 min-w-0">
             <article className="space-y-12">
               {article.blocks.map((block, index) => {
-                const elements: JSX.Element[] = []
+                const elements: ReactNode[] = []
 
                 const sectionId = article.toc[index]?.id || `section-${index}`
 
