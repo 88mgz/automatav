@@ -28,6 +28,38 @@ import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { LiquidBlobs } from "@/components/visual/LiquidBlobs"
 
+// ---- Normalizer: coerce model JSON to articleSchema ----
+function coerceForSchema(input: any): any {
+  const allowed = new Set([
+    "intro","comparisonTable","specGrid","prosCons","gallery","faq","ctaBanner","markdown"
+  ]);
+  const a = (input && typeof input === "object") ? { ...input } : {};
+  // ensure required toc
+  if (!("toc" in a) || a.toc == null) a.toc = [];
+  // modules must be an array; if model returned an object, drop it (optional field)
+  if (a.modules && !Array.isArray(a.modules)) { delete a.modules; }
+  // normalize blocks
+  if (!Array.isArray(a.blocks)) a.blocks = [];
+  a.blocks = a.blocks.map((b: any) => {
+    const t = b?.type;
+    if (!allowed.has(t)) {
+      const content = typeof b === "string" ? b : (b?.content ?? b?.text ?? JSON.stringify(b));
+      return { type: "markdown", content: String(content || "") };
+    }
+    if (t === "intro") {
+      const text = b?.text ?? b?.content ?? "";
+      return { ...b, type: "intro", text };
+    }
+    if (t === "markdown" && !("content" in b)) {
+      const content = b?.content ?? b?.text ?? "";
+      return { ...b, type: "markdown", content };
+    }
+    return b;
+  });
+  return a;
+}
+
+
 const SAMPLE_DATA = {
   title: "2026 Midsize Sedan Comparison: Honda Accord vs Toyota Camry vs Mazda6",
   tldr: "The 2026 Honda Accord, Toyota Camry, and Mazda6 represent the best midsize sedans on the market. The Accord excels in fuel economy and cargo space, the Camry offers legendary reliability and available AWD, while the Mazda6 provides upscale styling at the lowest price.",
