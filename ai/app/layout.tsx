@@ -1,3 +1,4 @@
+import { Toaster } from "@/components/ui/toaster";
 import type React from "react"
 import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
@@ -26,6 +27,7 @@ export default function RootLayout({
         <Suspense fallback={null}>{children}</Suspense>
         <Footer />
         <Analytics />
+              <Toaster />
       </body>
     </html>
   )

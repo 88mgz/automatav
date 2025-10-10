@@ -1,0 +1,12 @@
+[
+  {
+    "id": "comparison-article-v1",
+    "name": "Comparison Article (v1)",
+    "category": "comparison",
+    "isPublished": true,
+    "version": 1,
+    "prompt": "You are an auto journalist. Given make/model/year competitors, produce a structured JSON article with: title, description, canonical, tldr (<=120 words), key_takeaways (3-7 bullets), compare_table (rows for models with price, mpg, hp, cargo), specs (object per model), pros (list), cons (list), faq (>=3 items, each {q,a}). Keep it factual and concise.",
+    "zodOutput": "z.object({ title: z.string().min(10), description: z.string().min(30), canonical: z.string().url().optional(), tldr: z.string().max(800), key_takeaways: z.array(z.string()).min(3).max(7), compare_table: z.object({ columns: z.array(z.string()), rows: z.array(z.array(z.union([z.string(), z.number()]))) }), specs: z.record(z.any()), pros: z.array(z.string()).min(3), cons: z.array(z.string()).min(3), faq: z.array(z.object({ q: z.string(), a: z.string() })).min(3) })",
+    "defaults": { "year": 2026, "models": ["Honda Accord","Toyota Camry","Mazda6"] }
+  }
+]
