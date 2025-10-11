@@ -21,3 +21,4 @@ my-app/node_modules
 my-app/.next
 my-app/.turbo
 .vercel
+.env.vercel

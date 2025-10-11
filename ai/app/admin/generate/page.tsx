@@ -413,10 +413,31 @@ export default function GeneratePage() {
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok || !data.article) {
+        // Extra logging to help debug
+        try {
+          const text = await response.text();
+          console.error("Generate failed:", response.status, text);
+        } catch {}
+
         throw new Error(data.error || "Failed to generate article")
       }
 
-      const sanitized = coerceForSchema(data.article)
+      const sanitized = coerceForSchema(data.article);
+
+// Ensure toc is an array of { title, id }
+if (Array.isArray(sanitized.toc)) {
+  sanitized.toc = sanitized.toc.map((t, i) => {
+    if (typeof t === "string") {
+      const id = toSlug(t) || `sec-${i + 1}`;
+      return { title: t, id };
+    }
+    // If it's already an object, make sure both fields exist
+    const title = String(t?.title ?? `Section ${i + 1}`);
+    const id = String(t?.id ?? (toSlug(title) || `sec-${i + 1}`));
+    return { title, id };
+  });
+}
+
 
       // Try validating; if it throws, capture a few issues
       let validated: Article
