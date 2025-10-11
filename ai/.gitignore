@@ -38,3 +38,7 @@ next-env.d.ts
 
 # content (optional - uncomment if you don't want to commit generated articles)
 # /content/articles/*.json
+
+.next
+.turbo
+node_modules
