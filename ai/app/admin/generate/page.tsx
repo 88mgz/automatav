@@ -29,7 +29,7 @@ import { LiquidBlobs } from "@/components/visual/LiquidBlobs"
 
 /** Build a strict prompt the API expects (we will POST { prompt }) */
 function buildPrompt(input: {
-  title: string
+  label: string
   tldr?: string
   keyTakeaways?: string[]
   quizInstructions?: string
@@ -59,7 +59,7 @@ function buildPrompt(input: {
 You are an assistant that outputs ONLY compact JSON matching this schema (no prose). Do not include Markdown fences.
 
 Article = {
-  title: string
+  label: string
   slug: string                      // kebab-case, derived from title if needed
   description?: string
   intent: "comparison" | "review" | "guide" | "localized_dealer"
@@ -234,7 +234,7 @@ const coerceForSchema = (input: any): any => {
 }
 
 const SAMPLE_DATA = {
-  title: "2026 Midsize Sedan Comparison: Honda Accord vs Toyota Camry vs Mazda6",
+  label: "2026 Midsize Sedan Comparison: Honda Accord vs Toyota Camry vs Mazda6",
   tldr:
     "The 2026 Honda Accord, Toyota Camry, and Mazda6 represent the best midsize sedans on the market. The Accord excels in fuel economy and cargo space, the Camry offers legendary reliability and available AWD, while the Mazda6 provides upscale styling at the lowest price.",
   keyTakeaways: [
@@ -261,7 +261,7 @@ function CollapsibleSection({
   title,
   children,
   defaultOpen = false,
-}: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+}: { label: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
@@ -292,7 +292,7 @@ function CollapsibleSection({
 
 export default function GeneratePage() {
   const [formData, setFormData] = useState({
-    title: "",
+    label: "",
     tldr: "",
     keyTakeaways: "",
     quizInstructions: "",
@@ -337,7 +337,7 @@ export default function GeneratePage() {
 
   const loadSampleData = () => {
     setFormData({
-      title: SAMPLE_DATA.title,
+      label: SAMPLE_DATA.title,
       tldr: SAMPLE_DATA.tldr,
       keyTakeaways: SAMPLE_DATA.keyTakeaways.join("\n"),
       quizInstructions: SAMPLE_DATA.quizInstructions,
@@ -358,7 +358,7 @@ export default function GeneratePage() {
       ),
     })
     toast({
-      title: "Sample data loaded",
+      label: "Sample data loaded",
       description: "All fields have been populated with example content",
     })
   }
@@ -366,7 +366,7 @@ export default function GeneratePage() {
   const handleGenerate = async () => {
     if (!formData.title) {
       toast({
-        title: "Title required",
+        label: "Title required",
         description: "Please enter a title for your article",
         variant: "destructive",
       })
@@ -391,7 +391,7 @@ export default function GeneratePage() {
 
       // Build a single prompt for the API
       const prompt = buildPrompt({
-        title: formData.title,
+        label: formData.title,
         tldr: formData.tldr,
         keyTakeaways: formData.keyTakeaways.split("\n").filter(Boolean),
         quizInstructions: formData.quizInstructions,
@@ -424,17 +424,17 @@ export default function GeneratePage() {
 
       const sanitized = coerceForSchema(data.article);
 
-// Ensure toc is an array of { title, id }
+// Ensure toc is an array of { label, id }
 if (Array.isArray(sanitized.toc)) {
   sanitized.toc = (sanitized.toc as any[]).map((t: any, i: number) => {
     if (typeof t === "string") {
       const id = toSlug(t) || `sec-${i + 1}`;
-      return { title: t, id };
+      return { label: t, id };
     }
     // If it's already an object, make sure both fields exist
     const title = String(t?.title ?? `Section ${i + 1}`);
     const id = String(t?.id ?? (toSlug(title) || `sec-${i + 1}`));
-    return { title, id };
+    return { label, id };
   });
 }
 
@@ -459,13 +459,13 @@ if (Array.isArray(sanitized.toc)) {
       setGeneratedArticle(validated)
       setValidationErrors([])
       toast({
-        title: "Article generated",
+        label: "Article generated",
         description: "Your article has been generated successfully",
       })
     } catch (err: any) {
       setError(err.message)
       toast({
-        title: "Generation failed",
+        label: "Generation failed",
         description: err.message,
         variant: "destructive",
       })
@@ -495,13 +495,13 @@ if (Array.isArray(sanitized.toc)) {
       const data = await response.json()
       setPublishedUrl(data.url)
       toast({
-        title: "Published successfully",
+        label: "Published successfully",
         description: "Your article is now live",
       })
     } catch (err: any) {
       setError(err.message)
       toast({
-        title: "Publish failed",
+        label: "Publish failed",
         description: err.message,
         variant: "destructive",
       })
@@ -516,7 +516,7 @@ if (Array.isArray(sanitized.toc)) {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
     toast({
-      title: "Copied to clipboard",
+      label: "Copied to clipboard",
       description: "Article JSON has been copied",
     })
   }
@@ -531,7 +531,7 @@ if (Array.isArray(sanitized.toc)) {
     a.click()
     URL.revokeObjectURL(url)
     toast({
-      title: "Downloaded",
+      label: "Downloaded",
       description: "Article JSON has been downloaded",
     })
   }
@@ -576,7 +576,7 @@ if (Array.isArray(sanitized.toc)) {
                     <Input
                       id="title"
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, label: e.target.value })}
                       placeholder="2026 Toyota Camry vs Honda Accord"
                       className="mt-2 bg-slate-800 border-slate-700"
                     />
