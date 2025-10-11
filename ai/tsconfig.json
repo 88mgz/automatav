@@ -50,9 +50,9 @@
     "out"
   ],
   "watchOptions": {
-    "watchFile": "usePolling",
-    "watchDirectory": "usePolling",
-    "fallbackPolling": "dynamicPriority",
+    "watchFile": "dynamicPriorityPolling",
+    "watchDirectory": "dynamicPriorityPolling",
+    "fallbackPolling": "dynamicPriorityPolling",
     "synchronousWatchDirectory": false,
     "excludeDirectories": [
       ".git",
