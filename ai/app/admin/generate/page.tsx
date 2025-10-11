@@ -70,7 +70,7 @@ Article = {
     image?: string | { url: string, alt?: string }
     cta?: { label: string, href: string }     // REQUIRED if hero exists
   }
-  toc: string[]                      // REQUIRED and non-empty
+  toc: Array<{ label: string, id: string }>                      // REQUIRED and non-empty
   blocks: Array<
     | { type: "intro", text: string }
     | { type: "comparisonTable", items: Array<{ name: string, [k: string]: any }>}
@@ -143,9 +143,22 @@ const coerceForSchema = (input: any): any => {
   if (!a.intent) a.intent = "comparison"
 
   // toc required
+  // toc required -> normalize to {label,id}
   if (!Array.isArray(a.toc)) a.toc = []
-  a.toc = a.toc.filter((x: any) => typeof x === "string" && x.trim().length > 0)
-  if (a.toc.length === 0) a.toc = ["Overview", "Key Takeaways", "FAQ"]
+  // Allow strings or objects; coerce to {label,id}
+  let rawToc: any[] = a.toc
+  if (rawToc.length === 0) rawToc = ["Overview", "Key Takeaways", "FAQ"]
+  a.toc = rawToc
+    .map((t: any, i: number) => {
+      if (typeof t === "string") {
+        const id = toSlug(t) || `sec-${i+1}`
+        return { label: t, id }
+      }
+      const label = String(t?.label ?? t?.title ?? `Section ${i+1}`)
+      const id = toSlug(t?.id ?? label) || `sec-${i+1}`
+      return { label, id }
+    })
+
 
   // hero normalization inc. REQUIRED cta
   if (a.hero && typeof a.hero === "object") {
@@ -424,7 +437,7 @@ export default function GeneratePage() {
 
       const sanitized = coerceForSchema(data.article);
 
-// Ensure toc is an array of { label, id }
+// Ensure toc is an array of { title, id }
 if (Array.isArray(sanitized.toc)) {
   sanitized.toc = (sanitized.toc as any[]).map((t: any, i: number) => {
     if (typeof t === "string") {
@@ -434,7 +447,7 @@ if (Array.isArray(sanitized.toc)) {
     // If it's already an object, make sure both fields exist
     const title = String(t?.title ?? `Section ${i + 1}`);
     const id = String(t?.id ?? (toSlug(title) || `sec-${i + 1}`));
-    return { label, id };
+    return { title, id };
   });
 }
 
