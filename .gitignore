@@ -14,9 +14,9 @@ node_modules
 node_modules
 .next
 .turbo
-a i/node_modules
-a i/.next
-a i/.turbo
+ai/node_modules
+ai/.next
+ai/.turbo
 my-app/node_modules
 my-app/.next
 my-app/.turbo
