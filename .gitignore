@@ -1,0 +1,11 @@
+
+# Ignore build+deps
+ai/node_modules
+ai/.next
+ai/.turbo
+my-app/node_modules
+my-app/.next
+my-app/.turbo
+node_modules
+.next
+.turbo
