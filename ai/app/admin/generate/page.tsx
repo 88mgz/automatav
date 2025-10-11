@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -57,20 +56,21 @@ function buildPrompt(input: {
   } = input
 
   return `
-You are an assistant that outputs ONLY compact JSON matching this Zod schema (no prose):
+You are an assistant that outputs ONLY compact JSON matching this schema (no prose). Do not include Markdown fences.
 
 Article = {
   title: string
-  slug: string
+  slug: string                      // kebab-case, derived from title if needed
   description?: string
-  intent: "comparison"|"review"|"guide"|"localized_dealer"
+  intent: "comparison" | "review" | "guide" | "localized_dealer"
   hero?: {
     headline?: string
     subheadline?: string
     subtitle?: string
     image?: string | { url: string, alt?: string }
+    cta?: { label: string, href: string }     // REQUIRED if hero exists
   }
-  toc: string[]
+  toc: string[]                      // REQUIRED and non-empty
   blocks: Array<
     | { type: "intro", text: string }
     | { type: "comparisonTable", items: Array<{ name: string, [k: string]: any }>}
@@ -78,19 +78,22 @@ Article = {
     | { type: "prosCons", pros: string[], cons: string[] }
     | { type: "gallery", images: Array<{ url: string, alt?: string }>}
     | { type: "faq", items: Array<{ q: string, a: string }>}
-    | { type: "ctaBanner", headline: string, body?: string }
+    | { type: "ctaBanner", heading: string, label: string, href: string, body?: string } // ensure heading/label/href
     | { type: "markdown", content: string }
   >
   modules?: Array<any>
 }
 
-Requirements:
-- Include a non-empty "toc" array.
-- Prefer block types listed above; if you need free text, use { "type":"markdown", "content": string }.
-- If you include images, alt text is preferred.
+Hard requirements:
+- Provide a non-empty "toc" with useful section titles.
+- If hero is present, include hero.cta with both label and href.
+- Prefer the listed block types exactly; if you need free text, use { "type":"markdown", "content": string }.
+- If you output any CTA-like block, include heading, label, href.
+- Images should include alt text when possible.
 
 Title: ${title}
 Models JSON (optional): ${JSON.stringify(models)}
+
 Module instructions:
 - tldr: ${tldr}
 - key takeaways: ${JSON.stringify(keyTakeaways)}
@@ -101,7 +104,22 @@ Module instructions:
 - reviews: ${reviewsInstructions}
 
 Return ONLY JSON.
-  `.trim()
+`.trim()
+}
+
+/** small helpers */
+const toSlug = (s: string) =>
+  (s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120)
+
+const asImageObj = (img: any) => {
+  if (!img) return undefined
+  if (typeof img === "string") return { url: img, alt: "" }
+  if (typeof img === "object" && img.url) return { url: String(img.url), alt: img.alt ? String(img.alt) : "" }
+  return undefined
 }
 
 /** Normalize model JSON so it passes articleSchema more reliably */
@@ -116,10 +134,32 @@ const coerceForSchema = (input: any): any => {
     "ctaBanner",
     "markdown",
   ])
+
   const a = input && typeof input === "object" ? { ...input } : {}
 
+  // title/slug/intent
+  if (!a.title || typeof a.title !== "string") a.title = "Untitled"
+  if (!a.slug || typeof a.slug !== "string") a.slug = toSlug(a.title)
+  if (!a.intent) a.intent = "comparison"
+
   // toc required
-  if (!("toc" in a) || a.toc == null) a.toc = []
+  if (!Array.isArray(a.toc)) a.toc = []
+  a.toc = a.toc.filter((x: any) => typeof x === "string" && x.trim().length > 0)
+  if (a.toc.length === 0) a.toc = ["Overview", "Key Takeaways", "FAQ"]
+
+  // hero normalization inc. REQUIRED cta
+  if (a.hero && typeof a.hero === "object") {
+    const h = { ...a.hero }
+    if (!h.headline) h.headline = a.title
+    if (h.image) h.image = asImageObj(h.image)
+    if (!h.cta || typeof h.cta !== "object") {
+      h.cta = { label: "Explore", href: "#" }
+    } else {
+      if (!h.cta.label) h.cta.label = "Explore"
+      if (!h.cta.href) h.cta.href = "#"
+    }
+    a.hero = h
+  }
 
   // modules must be array; if object, drop it (optional)
   if (a.modules && !Array.isArray(a.modules)) {
@@ -129,28 +169,74 @@ const coerceForSchema = (input: any): any => {
   // normalize blocks
   if (!Array.isArray(a.blocks)) a.blocks = []
   a.blocks = a.blocks.map((b: any) => {
-    const t = b?.type
-    // map unknown types to markdown
-    if (!allowed.has(t)) {
-      const content = typeof b === "string" ? b : b?.content ?? b?.text ?? JSON.stringify(b)
-      return { type: "markdown", content: String(content || "") }
+    // Unknown or string → markdown
+    if (!b || typeof b !== "object" || !b.type || !allowed.has(b.type)) {
+      const content =
+        typeof b === "string"
+          ? b
+          : b?.content ?? b?.text ?? (b ? JSON.stringify(b) : "")
+    return { type: "markdown", content: String(content || "") }
     }
-    if (t === "intro") {
+
+    // Specific coercions
+    if (b.type === "intro") {
       const text = b?.text ?? b?.content ?? ""
-      return { ...b, type: "intro", text }
+      return { ...b, type: "intro", text: String(text) }
     }
-    if (t === "markdown" && !("content" in b)) {
+
+    if (b.type === "markdown") {
       const content = b?.content ?? b?.text ?? ""
-      return { ...b, type: "markdown", content }
+      return { ...b, type: "markdown", content: String(content) }
     }
+
+    if (b.type === "gallery") {
+      const images = Array.isArray(b.images) ? b.images.map(asImageObj).filter(Boolean) : []
+      return { ...b, images }
+    }
+
+    if (b.type === "faq") {
+      const items = Array.isArray(b.items)
+        ? b.items
+            .map((it: any) => ({
+              q: String(it?.q ?? it?.question ?? ""),
+              a: String(it?.a ?? it?.answer ?? ""),
+            }))
+            .filter((it: any) => it.q && it.a)
+        : []
+      return { ...b, items }
+    }
+
+    if (b.type === "prosCons") {
+      const pros = Array.isArray(b.pros) ? b.pros.map(String).filter(Boolean) : []
+      const cons = Array.isArray(b.cons) ? b.cons.map(String).filter(Boolean) : []
+      return { ...b, pros, cons }
+    }
+
+    if (b.type === "comparisonTable" || b.type === "specGrid") {
+      const items = Array.isArray(b.items)
+        ? b.items.map((it: any) => ({ name: String(it?.name ?? "Item"), ...it }))
+        : []
+      return { ...b, items }
+    }
+
+    // CTA-like block: ensure heading/label/href
+    if (b.type === "ctaBanner") {
+      const heading = b.heading ?? b.headline ?? "Ready to continue?"
+      const label = b.label ?? b.cta?.label ?? "Learn more"
+      const href = b.href ?? b.cta?.href ?? "#"
+      return { ...b, heading: String(heading), label: String(label), href: String(href) }
+    }
+
     return b
   })
+
   return a
 }
 
 const SAMPLE_DATA = {
   title: "2026 Midsize Sedan Comparison: Honda Accord vs Toyota Camry vs Mazda6",
-  tldr: "The 2026 Honda Accord, Toyota Camry, and Mazda6 represent the best midsize sedans on the market. The Accord excels in fuel economy and cargo space, the Camry offers legendary reliability and available AWD, while the Mazda6 provides upscale styling at the lowest price.",
+  tldr:
+    "The 2026 Honda Accord, Toyota Camry, and Mazda6 represent the best midsize sedans on the market. The Accord excels in fuel economy and cargo space, the Camry offers legendary reliability and available AWD, while the Mazda6 provides upscale styling at the lowest price.",
   keyTakeaways: [
     "Honda Accord leads in cargo space with 16.7 cubic feet",
     "Toyota Camry achieves best highway fuel economy at 39 MPG",
@@ -246,6 +332,7 @@ export default function GeneratePage() {
 
     window.addEventListener("keydown", handleKeyPress)
     return () => window.removeEventListener("keydown", handleKeyPress)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, generatedArticle])
 
   const loadSampleData = () => {
@@ -323,14 +410,33 @@ export default function GeneratePage() {
         body: JSON.stringify({ prompt }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok || !data.article) {
         throw new Error(data.error || "Failed to generate article")
       }
 
-      const validatedArticle = parseArticle(coerceForSchema(data.article))
-      setGeneratedArticle(validatedArticle)
+      const sanitized = coerceForSchema(data.article)
+
+      // Try validating; if it throws, capture a few issues
+      let validated: Article
+      try {
+        validated = parseArticle(sanitized)
+      } catch (zerr: any) {
+        const msg: string = zerr?.message || "Article validation failed"
+        // Heuristic: pull out a few required-field hints
+        const hints =
+          msg
+            .split("\n")
+            .filter((l) => /Required|Invalid/.test(l))
+            .slice(0, 5) || []
+        setValidationErrors(hints)
+        console.error("Zod error:", msg)
+        throw new Error(msg)
+      }
+
+      setGeneratedArticle(validated)
+      setValidationErrors([])
       toast({
         title: "Article generated",
         description: "Your article has been generated successfully",
@@ -361,7 +467,7 @@ export default function GeneratePage() {
       })
 
       if (!response.ok) {
-        const data = await response.json()
+        const data = await response.json().catch(() => ({}))
         throw new Error(data.error || `HTTP ${response.status}`)
       }
 
@@ -629,6 +735,20 @@ export default function GeneratePage() {
                   </>
                 )}
 
+                {validationErrors.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Validation hints:
+                      <ul className="list-disc ml-5 mt-2 space-y-1">
+                        {validationErrors.map((v, i) => (
+                          <li key={i} className="text-xs">{v}</li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {error && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -639,7 +759,7 @@ export default function GeneratePage() {
                 {publishedUrl && (
                   <Alert className="bg-green-500/10 border-green-500/50">
                     <AlertDescription className="text-green-400">
-                      Published!{" "}
+                      Published{" "}
                       <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline">
                         View article →
                       </a>
