@@ -1,8 +1,7 @@
 {
-  // Use the workspace TS (the one we just pinned)
   "typescript.tsdk": "node_modules/typescript/lib",
-
-  // Reduce watcher load (these dirs change constantly or are huge)
+  "typescript.tsserver.maxTsServerMemory": 3072,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
@@ -22,16 +21,5 @@
     "**/build": true,
     "**/out": true,
     "**/coverage": true
-  },
-
-  // TS server: give it RAM and keep it quiet
-  "typescript.tsserver.maxTsServerMemory": 3072,
-  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
-
-  // Optional: if Git scanning is noisy, uncomment this:
-  // "git.enabled": false,
-
-  // Optional: autosave reduces re-parsing from constant edits
-  // "files.autoSave": "afterDelay",
-  // "files.autoSaveDelay": 1500
+  }
 }
