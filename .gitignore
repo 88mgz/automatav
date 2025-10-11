@@ -9,3 +9,14 @@ my-app/.turbo
 node_modules
 .next
 .turbo
+
+# Ignore build+deps
+node_modules
+.next
+.turbo
+a i/node_modules
+a i/.next
+a i/.turbo
+my-app/node_modules
+my-app/.next
+my-app/.turbo
