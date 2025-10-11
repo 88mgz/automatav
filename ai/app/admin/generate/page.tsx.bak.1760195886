@@ -443,8 +443,8 @@ if (Array.isArray(sanitized.toc)) {
       return { label: t, id };
     }
     // If it's already an object, make sure both fields exist
-    const label = String(t?.label ?? t?.title ?? `Section ${i + 1}`);
-    const id = String(t?.id ?? (toSlug(label) || `sec-${i + 1}`));
+    const title = String(t?.title ?? `Section ${i + 1}`);
+    const id = String(t?.id ?? (toSlug(title) || `sec-${i + 1}`));
     return { label, id };
   });
 }
