@@ -24,9 +24,7 @@
     ],
     "paths": {
       "@/*": [
-        "src/*",
-        "components/*",
-        "*"
+        "src/*"
       ]
     },
     "baseUrl": "."
@@ -35,9 +33,36 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "**/*.d.ts"
   ],
   "exclude": [
-    "node_modules"
-  ]
+    "node_modules",
+    ".next",
+    ".turbo",
+    "dist",
+    "build",
+    "coverage",
+    "out"
+  ],
+  "watchOptions": {
+    "watchFile": "usePolling",
+    "fallbackPolling": "dynamicPriority",
+    "watchDirectory": "usePolling",
+    "synchronousWatchDirectory": false,
+    "excludeDirectories": [
+      ".git",
+      "node_modules",
+      ".next",
+      ".turbo",
+      "dist",
+      "build",
+      "coverage",
+      "out"
+    ]
+  }
 }
