@@ -91,7 +91,7 @@ Requirements:
 
 Title: ${title}
 Models JSON (optional): ${JSON.stringify(models)}
-Module customInstructions:
+Module instructions:
 - tldr: ${tldr}
 - key takeaways: ${JSON.stringify(keyTakeaways)}
 - quiz: ${quizInstructions}

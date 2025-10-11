@@ -91,7 +91,7 @@ Requirements:
 
 Title: ${title}
 Models JSON (optional): ${JSON.stringify(models)}
-Module customInstructions:
+Module instructions:
 - tldr: ${tldr}
 - key takeaways: ${JSON.stringify(keyTakeaways)}
 - quiz: ${quizInstructions}
@@ -320,7 +320,7 @@ export default function GeneratePage() {
       const prompt = buildPrompt({
         title: formData.title,
         models: models.length ? models : undefined,
-        customInstructions: {
+        instructions: {
           tldr: formData.tldr,
           keyTakeaways: formData.keyTakeaways.split("\n").filter(Boolean),
           quizInstructions: formData.quizInstructions,
@@ -336,5 +336,3 @@ export default function GeneratePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
-      });
-      const data = await response.json();
