@@ -426,7 +426,7 @@ export default function GeneratePage() {
 
 // Ensure toc is an array of { title, id }
 if (Array.isArray(sanitized.toc)) {
-  sanitized.toc = sanitized.toc.map((t, i) => {
+  sanitized.toc = (sanitized.toc as any[]).map((t: any, i: number) => {
     if (typeof t === "string") {
       const id = toSlug(t) || `sec-${i + 1}`;
       return { title: t, id };
