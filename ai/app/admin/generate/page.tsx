@@ -261,7 +261,7 @@ function CollapsibleSection({
   title,
   children,
   defaultOpen = false,
-}: { label: string; children: React.ReactNode; defaultOpen?: boolean }) {
+}: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
