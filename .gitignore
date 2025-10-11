@@ -22,3 +22,7 @@ my-app/.next
 my-app/.turbo
 .vercel
 .env.vercel
+
+# editor/backup files
+*.bak
+*.bak.*
