@@ -350,7 +350,7 @@ export default function GeneratePage() {
 
   const loadSampleData = () => {
     setFormData({
-      label: SAMPLE_DATA.title,
+      title: SAMPLE_DATA.title,
       tldr: SAMPLE_DATA.tldr,
       keyTakeaways: SAMPLE_DATA.keyTakeaways.join("\n"),
       quizInstructions: SAMPLE_DATA.quizInstructions,
